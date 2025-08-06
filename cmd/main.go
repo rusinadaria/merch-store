@@ -1,21 +1,24 @@
 package main
 
 import (
+	"log"
 	"log/slog"
+	"merch-store/internal/config"
+	"merch-store/internal/handlers"
+	"merch-store/internal/repository"
+	"merch-store/internal/services"
 	"net/http"
 	"os"
-	"log"
-	_"github.com/lib/pq"
-	"merch-store/internal/handlers"
-	"merch-store/internal/services"
-	"merch-store/internal/repository"
+
+	// "github.com/ilyakaznacheev/cleanenv"
+	_ "github.com/lib/pq"
 )
 
 func main() {
 	logger := configLogger()
+	cfg := config.GetConfig()
 
-	storage_path := os.Getenv("DB_PATH")
-	db, err := repository.ConnectDatabase(storage_path, logger)
+	db, err := repository.ConnectDatabase(cfg.DBPath, logger)
 	if err != nil {
 		log.Fatal("Не удалось подключиться к базе данных:", err)
 	}
@@ -24,12 +27,7 @@ func main() {
 	srv := services.NewService(repo)
 	handler := handlers.NewHandler(srv)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = ":8080"
-	}
-
-	err = http.ListenAndServe(port, handler.InitRoutes(logger))
+	err = http.ListenAndServe(cfg.Port, handler.InitRoutes(logger))
 	if err != nil {
 		log.Fatal("Не удалось запустить сервер:", err)
 	}
